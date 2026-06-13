@@ -1,0 +1,13 @@
+{
+  "allowed_directories": [],
+  "allowed_tools": [
+    "file_read"
+  ],
+  "blocked_tools": [],
+  "blocked_path_patterns": [
+    "sensitive",
+    "private",
+    "secret",
+    "password"
+  ]
+}
