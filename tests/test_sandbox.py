@@ -33,8 +33,8 @@ def test_allowed_file_read(tmp_path):
     
     assert len(log_entries) == 1
     entry = log_entries[0]
-    assert entry["actor"] == "toy-agent"
-    assert entry["action_type"] == "read_file"
+    assert entry["actor"]["name"] == "toy-agent"
+    assert entry["action_type"] == "file_read"
     assert entry["allowed"] is True
     assert entry["requested_path"] == os.path.abspath(str(test_file))
     assert "within safe boundaries" in entry["reason"]
