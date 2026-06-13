@@ -24,10 +24,23 @@ class AuditLogger:
         # Ensure log directory exists locally
         os.makedirs(self.log_dir, exist_ok=True)
 
+        # Resolve actor to a structured dictionary representation
+        if hasattr(actor, "to_dict"):
+            actor_data = actor.to_dict()
+        elif isinstance(actor, dict):
+            actor_data = actor
+        else:
+            actor_data = {
+                "name": str(actor),
+                "session_id": "default",
+                "purpose": None,
+                "metadata": {}
+            }
+
         # Build log record structure
         record = {
             "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            "actor": actor,
+            "actor": actor_data,
             "action_type": action_type,
             "requested_path": path,
             "allowed": allowed,
