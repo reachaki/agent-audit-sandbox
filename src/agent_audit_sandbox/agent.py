@@ -14,12 +14,14 @@ class ToyFileAgent:
         Reads and returns the content of the file if allowed.
         Fails safely if the file does not exist or if the policy blocks it.
         """
-        # Resolve the absolute path of the target file
-        resolved_path = os.path.abspath(os.path.join(self.allowed_dir, file_path))
+        # Construct path before resolving parent directory references
+        target_path = os.path.join(self.allowed_dir, file_path)
 
         # Apply policy checking if configured
         if self.policy_checker:
-            decision = self.policy_checker.check_read_action(resolved_path)
+            decision = self.policy_checker.check_read_action(target_path)
+            # Resolve to absolute path for audit log and file reading
+            resolved_path = os.path.abspath(target_path)
             if self.audit_logger:
                 self.audit_logger.log_action(
                     actor="toy-agent",
@@ -31,8 +33,8 @@ class ToyFileAgent:
             if not decision.allowed:
                 raise PermissionError(f"Action blocked by policy: {decision.reason}")
         else:
+            resolved_path = os.path.abspath(target_path)
             # Fallback basic check: ensure it is under allowed_dir
-            # This is a basic prefix check used before the policy checker is fully implemented.
             if not resolved_path.startswith(self.allowed_dir):
                 raise PermissionError("Access outside the allowed directory is blocked.")
         
