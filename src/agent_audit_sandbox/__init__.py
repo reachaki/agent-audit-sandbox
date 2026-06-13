@@ -8,6 +8,7 @@ from agent_audit_sandbox.logger import AuditLogger
 from agent_audit_sandbox.context import ActorContext
 from agent_audit_sandbox.registry import ToolRegistry
 from agent_audit_sandbox.config import load_policy_config, PolicyConfigError
+from agent_audit_sandbox.validation import validate_tool_args
 
 __all__ = [
     "ToyFileAgent",
@@ -17,5 +18,6 @@ __all__ = [
     "ActorContext",
     "ToolRegistry",
     "load_policy_config",
-    "PolicyConfigError"
+    "PolicyConfigError",
+    "validate_tool_args"
 ]

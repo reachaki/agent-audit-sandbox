@@ -56,6 +56,23 @@ class ToyFileAgent:
                 )
             raise PermissionError(reason)
 
+        # 1.5. Validate tool arguments
+        try:
+            from agent_audit_sandbox.validation import validate_tool_args
+            validate_tool_args(tool_name, kwargs)
+        except (ValueError, TypeError) as e:
+            reason = f"Blocked: Argument validation failed: {e}"
+            if self.audit_logger:
+                log_path = requested_path if isinstance(requested_path, str) else ""
+                self.audit_logger.log_action(
+                    actor=actor_log,
+                    action_type=tool_name,
+                    path=log_path,
+                    allowed=False,
+                    reason=reason
+                )
+            raise
+
         # 2. Enforce policy check
         if self.policy_checker:
             if hasattr(self.policy_checker, "check_action"):
