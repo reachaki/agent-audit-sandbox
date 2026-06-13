@@ -6,8 +6,8 @@
   "blocked_tools": [],
   "blocked_path_patterns": [
     "sensitive",
-    "private",
-    "secret",
+    "private_data",
+    "secret_file",
     "password"
   ]
 }
