@@ -1,5 +1,36 @@
 import os
 
+class ScannerResult:
+    """
+    Represents the result of a file prompt injection content scan.
+    """
+    def __init__(
+        self,
+        detected: bool,
+        matched_phrases: list,
+        risk_level: str,
+        explanation: str,
+        source_file_path: str
+    ):
+        self.detected = detected
+        self.matched_phrases = matched_phrases
+        self.risk_level = risk_level
+        self.explanation = explanation
+        self.source_file_path = source_file_path
+
+    def to_dict(self) -> dict:
+        """
+        Serializes the scanner result into a dictionary format.
+        """
+        return {
+            "detected": self.detected,
+            "matched_phrases": self.matched_phrases,
+            "risk_level": self.risk_level,
+            "explanation": self.explanation,
+            "source_file_path": self.source_file_path
+        }
+
+
 class FileContentScanner:
     """
     Checks file contents for potential prompt injection attempts and malicious instructions.
@@ -27,9 +58,9 @@ class FileContentScanner:
             {"phrase": "execute shell", "label": "execute commands"},
         ]
 
-    def scan(self, content: str, source_path: str) -> dict:
+    def scan(self, content: str, source_path: str) -> ScannerResult:
         """
-        Scans file content against configured rules and returns a dict.
+        Scans file content against configured rules and returns a structured ScannerResult.
         """
         matched_phrases = []
         matched_labels = set()
@@ -56,10 +87,10 @@ class FileContentScanner:
             risk_level = "high"
             explanation = f"High risk prompt injection detected. Matched multiple categories: {categories_str}."
 
-        return {
-            "detected": detected,
-            "matched_phrases": sorted(list(set(matched_phrases))),
-            "risk_level": risk_level,
-            "explanation": explanation,
-            "source_file_path": os.path.abspath(source_path) if source_path else ""
-        }
+        return ScannerResult(
+            detected=detected,
+            matched_phrases=sorted(list(set(matched_phrases))),
+            risk_level=risk_level,
+            explanation=explanation,
+            source_file_path=os.path.abspath(source_path) if source_path else ""
+        )
