@@ -48,3 +48,12 @@ venv.bak/
 
 # Project specific
 logs/
+
+AGENTS.md
+.agent/
+*.local.md
+
+.agent/
+AGENTS.md
+.DS_Store
+*.local.md
