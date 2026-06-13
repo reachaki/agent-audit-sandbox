@@ -97,7 +97,7 @@ class PolicyChecker:
             if not allowed:
                 return PolicyDecision(
                     allowed=False,
-                    reason="Access denied: path lies outside the allowed directories."
+                    reason="Access denied: path lies outside the allowed directory."
                 )
 
             return PolicyDecision(
