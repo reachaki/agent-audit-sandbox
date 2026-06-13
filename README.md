@@ -12,32 +12,50 @@ As AI agents become more autonomous and are granted access to tools (such as fil
 
 An audit and policy enforcement layer provides a secure boundary around the agent. It inspects actions before they execute, blocks unsafe attempts, and maintains a transparent, tamper-evident record of all activities.
 
-## What the First Version Does
+## Architecture and Capabilities
 
-The first version of the sandbox provides:
-1. **Toy File Agent**: A simple agent that can request to read files from a specific allowed directory.
-2. **Policy Checker**: A policy layer that checks if the requested paths are safe, allowing reads only from approved folders and explicitly blocking path traversal attempts (such as using `../` or relative parents).
-3. **Audit Logger**: A structured logging component that writes action details (timestamp, actor, action type, path, decision, and reason) to a JSONL file in a local logs directory.
-4. **Demo Script**: A runner that executes safe and unsafe file operations to show the sandbox in action.
+The sandbox implements the following security components:
+
+1. **Dynamic Actor Context**:
+   * **Why it matters**: AI safety auditing requires full attribution. Knowing which agent, subagent, or user session initiated an action helps track intent and locate vulnerabilities.
+   * **Implementation**: The `ActorContext` class captures the actor name, session id, purpose, and metadata. This structured metadata is serialized and written to the audit log.
+
+2. **Tool Registry**:
+   * **Why it matters**: Registering tools establishes an explicit boundary on what capabilities an agent has. Instead of letting agents execute arbitrary commands or access the file system directly, they must use registered tools. This enables centralized auditing and access control.
+   * **Implementation**: The `ToolRegistry` registers tool callbacks by name (such as `file_read`) and manages their execution.
+
+3. **Action-Based Policy Checker**:
+   * **How it works now**: Instead of running generic checks, policy rules are evaluated per action type. When a tool is invoked, the `PolicyChecker` evaluates the action name and its parameters.
+   * **Rules enforced**:
+     * `file_read` checks confirm that target files lie within base directories and contain no path traversal patterns (`..`).
+     * Unknown tools are blocked by default.
+
+4. **Audit Logger**:
+   * Appends actions, results (allowed or blocked), actor contexts, and detailed policy check reasons into `logs/audit.jsonl`.
 
 ## How to Run the Demo
 
 To run the sandbox demo, run the following command from the root of the repository:
 ```bash
-python examples/demo.py
+python3 examples/demo.py
 ```
-This will run three scenarios:
-1. A successful read of a file within the allowed folder.
-2. A blocked read of a file outside the allowed folder.
-3. A blocked read attempting a path traversal attack.
+This runs the following scenarios and prints outputs and logs:
+1. A successful file read by actor Alice (session 101, purpose: data inspection).
+2. A blocked out-of-boundary file read by actor Bob (session 202, purpose: scanning directory files).
+3. A blocked unregistered tool attempt (network_connect).
 
-The resulting actions will be written to `logs/audit.jsonl`.
+The resulting actions are written to `logs/audit.jsonl`.
 
 ## How to Run Tests
 
-First, install the development dependencies. You can install pytest directly or run it via a virtual environment.
 To run the automated test suite, execute:
 ```bash
 python -m pytest
 ```
-The test suite covers safe reading, policy blocking, traversal attempts, error handling for missing files, and audit logging.
+*(If pytest is in a specific environment path, invoke it directly or set PYTHONPATH as needed.)*
+
+## Recommended Next Milestones
+
+* **Dynamic Config-Based Policies**: Load allowed paths, tool access permissions, and blocking configurations dynamically from YAML or JSON.
+* **Network Tool Sandboxing**: Register a network access tool and enforce URL host/IP blocklists.
+* **Database Query Guardrails**: Add a database query tool that inspects SQL statements for dangerous operations before execution.
