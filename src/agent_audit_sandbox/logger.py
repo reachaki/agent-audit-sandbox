@@ -16,7 +16,8 @@ class AuditLogger:
         action_type: str = "read_file",
         path: str = "",
         allowed: bool = False,
-        reason: str = ""
+        reason: str = "",
+        scanner_result: dict = None
     ):
         """
         Logs an action with timestamp, actor, type, path, decision, and reason.
@@ -46,6 +47,9 @@ class AuditLogger:
             "allowed": allowed,
             "reason": reason
         }
+
+        if scanner_result is not None:
+            record["scanner_result"] = scanner_result
 
         # Append JSON record line to the log file
         with open(self.log_filepath, "a", encoding="utf-8") as f:
