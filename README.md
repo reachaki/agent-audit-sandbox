@@ -36,8 +36,14 @@ The sandbox implements the following security components:
      * Verifies target files lie within one of the approved folders list (`allowed_directories`).
      * Blocks path traversal references (`..`).
 
-5. **Audit Logger**:
-   * Appends actions, results (allowed or blocked), actor contexts, and detailed policy check reasons into `logs/audit.jsonl`.
+5. **File Content Injection Scanner**:
+   * **Why it matters**: AI agents that read files may encounter hidden prompt injection attempts embedded in otherwise normal-looking documents. These instructions might tell the agent to reveal secrets, ignore safety rules, or bypass policy checks. The policy checker handles access control (can the agent read this file?) but cannot inspect what the file actually contains. A content scanner fills that gap by checking the raw text for suspicious phrases after the file has been read.
+   * **How it works**: The `FileContentScanner` scans file content against a list of known-suspicious phrases grouped into categories such as "ignore previous instructions", "reveal secrets", "read protected files", "bypass policy", "delete files", and "execute commands". It returns a `ScannerResult` with `detected` (bool), `matched_phrases` (list), `risk_level` (low/medium/high based on how many categories matched), `explanation`, and `source_file_path`.
+   * **Policy vs. scanning**: The policy checker runs before the file is read and decides whether the agent is allowed to access the file at all. The scanner runs after the file is read and flags whether the content looks suspicious. These are two separate layers. A file can pass the policy check but still contain dangerous instructions.
+   * **Current limitations**: The scanner uses simple substring matching. It will miss obfuscated injections, typos, encoded text, or instructions phrased in ways not covered by the rule list. It is a starting point, not a complete defense.
+
+6. **Audit Logger**:
+   * Appends actions, results (allowed or blocked), actor contexts, detailed policy check reasons, and optional scanner results into `logs/audit.jsonl`.
 
 ## Policy Configuration Guide
 
@@ -69,9 +75,11 @@ To run the sandbox demo, run the following command from the root of the reposito
 python3 examples/demo.py
 ```
 This runs the following scenarios and prints outputs and logs:
-1. A successful file read by actor Alice (session 101, purpose: data inspection).
-2. A blocked out-of-boundary file read by actor Bob (session 202, purpose: scanning directory files).
-3. A blocked unregistered tool attempt (network_connect).
+1. A successful read of a normal report with content scanning enabled (no injection detected).
+2. A read of a report containing a simulated prompt injection (flagged by scanner with matched phrases and risk level).
+3. A read of a report with hidden system instructions (flagged with multiple categories).
+4. A blocked out-of-boundary file read by actor Bob (policy blocks before scanner runs).
+5. A blocked unregistered tool attempt (network_connect).
 
 The resulting actions are written to `logs/audit.jsonl`.
 
