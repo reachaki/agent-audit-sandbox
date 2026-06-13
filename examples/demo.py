@@ -1,6 +1,6 @@
 import os
 import shutil
-from agent_audit_sandbox import ToyFileAgent, PolicyChecker, AuditLogger
+from agent_audit_sandbox import ToyFileAgent, PolicyChecker, AuditLogger, ActorContext
 
 def main():
     # Setup directories for demonstration
@@ -36,39 +36,45 @@ def main():
         audit_logger=logger
     )
 
-    # Scenario 1: Allowed file read
-    print("Scenario 1: Reading allowed file...")
+    # Define dynamic actor contexts
+    alice_ctx = ActorContext(
+        name="Alice",
+        session_id="session-alice-101",
+        purpose="data inspection",
+        metadata={"user_role": "analyst"}
+    )
+    
+    bob_ctx = ActorContext(
+        name="Bob",
+        session_id="session-bob-202",
+        purpose="scanning directory files",
+        metadata={"user_role": "auditor"}
+    )
+
+    # Scenario 1: Allowed file read by Alice
+    print("Scenario 1: Reading allowed file (Actor: Alice)...")
     try:
-        content = agent.read_file("allowed_file.txt")
+        content = agent.read_file("allowed_file.txt", actor_context=alice_ctx)
         print(f"Success! Content: {content}")
     except Exception as e:
         print(f"Failed unexpectedly: {e}")
     print()
 
-    # Scenario 2: Blocked file read (outside allowed directory)
+    # Scenario 2: Blocked file read (outside allowed directory) by Bob
     relative_blocked_path = os.path.relpath(blocked_file_path, allowed_dir)
-    print(f"Scenario 2: Reading file outside allowed directory ({relative_blocked_path})...")
+    print(f"Scenario 2: Reading file outside allowed directory (Actor: Bob, Path: {relative_blocked_path})...")
     try:
-        agent.read_file(relative_blocked_path)
+        agent.read_file(relative_blocked_path, actor_context=bob_ctx)
     except Exception as e:
         print(f"Result: Blocked safely as expected. Error: {e}")
     print()
 
-    # Scenario 3: Path traversal attempt
-    traversal_path = "allowed_file.txt/../../demo_sandbox_blocked/blocked_file.txt"
-    print(f"Scenario 3: Reading file via explicit path traversal ({traversal_path})...")
+    # Scenario 3: Blocked unknown tool (network_connect)
+    print("Scenario 3: Attempting to call an unregistered tool (network_connect)...")
     try:
-        agent.read_file(traversal_path)
+        agent.execute_tool("network_connect", actor_context=alice_ctx, host="example.com")
     except Exception as e:
         print(f"Result: Blocked safely as expected. Error: {e}")
-    print()
-
-    # Scenario 4: Missing allowed file
-    print("Scenario 4: Reading a missing file inside allowed directory...")
-    try:
-        agent.read_file("nonexistent.txt")
-    except Exception as e:
-        print(f"Result: Failed safely with file not found error. Error: {e}")
     print()
 
     # Clean up temporary test files
@@ -78,14 +84,14 @@ def main():
     except Exception:
         pass
 
-    # Show the generated audit logs
+    # Show the generated audit logs showing actor and tool details
     print("=== Audit Logs ===")
     print(f"Audit log written to: {logger.log_filepath}")
     print("Latest log entries:")
     if os.path.exists(logger.log_filepath):
         with open(logger.log_filepath, "r", encoding="utf-8") as f:
             lines = f.readlines()
-            for line in lines[-4:]:
+            for line in lines[-3:]:
                 print(line.strip())
     print("==================")
 
