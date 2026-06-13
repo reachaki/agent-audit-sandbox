@@ -39,8 +39,13 @@ class PolicyChecker:
                     reason="Path traversal attempt detected containing parent directory references (..)."
                 )
 
-            # Resolve to absolute path to handle symlinks, relative references, etc.
-            abs_path = os.path.abspath(path)
+            # Resolve to absolute path relative to allowed_dir if relative
+            if not os.path.isabs(path):
+                target_path = os.path.join(self.allowed_dir, path)
+            else:
+                target_path = path
+
+            abs_path = os.path.abspath(target_path)
 
             # Check if the absolute path resides within the allowed base directory
             try:
